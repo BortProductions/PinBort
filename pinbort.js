@@ -1,9 +1,15 @@
 const Discord = require("discord.js");
 const client = new Discord.Client();
 const token = "put your token here";
+const sql = require("sqlite");
+sql.open("./users.sqlite");
 
 client.on('ready', () => {
   console.log(`PinBort is now up as ${client.user.tag}!`);
+  client.user.setGame("and pinning");
+  client.user.setStatus("idle");
+  
+
 });
 
 client.on('message', msg => {
@@ -42,6 +48,17 @@ client.on('message', msg => {
   }
 });
       }
+ if (msg.content == "*pin")
+     {
+     sql.get(`SELECT * FROM users WHERE userId = "${msg.author.id}"`).then(row => {
+
+}).catch(() => {
+console.error; // Gotta log those errors
+sql.run("CREATE TABLE IF NOT EXISTS users (userId TEXT, server TEXT)").then(() => {
+  sql.run("INSERT INTO users (userId, server) VALUES (?, ?, ?)", [1, 1]);
+});
+});
+     }
   }
 });
 
