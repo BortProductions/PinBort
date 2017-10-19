@@ -6,8 +6,10 @@ const fs = require("fs");
 const sql = require("sqlite");
 sql.open("./users.sqlite");
 
+const Perms = require("./perms.js");
+
 client.on('ready', () => {
-    console.log(`PinBort is now up as ${client.user.tag}! ${client.guilds.length} guilds.`);
+    console.log(`PinBort is now up as ${client.user.tag}! ${client.guilds.array().length} guilds.`);
     client.user.setGame("and pinning");
     client.user.setStatus("idle");
 });
@@ -58,6 +60,40 @@ client.on('message', msg => {
                     sql.run("INSERT INTO users (userId, server) VALUES (?, ?, ?)", [1, 1]);
                 });
             });
+        }
+        if (msg.content.startsWith("*allow"))
+        {
+            if(Perms.effectivelyAllowed(msg.author, msg.guild, sql)){
+                if(msg.mentions.users.array().length > 0){
+                    Perms.addAllowed(msg.mentions.users.array()[0], msg.guild, sql);
+                    msg.channel.send(`Gave **${msg.mentions.users.array()[0].username}** permission to pin messages.`);
+                }
+                else {
+                    msg.channel.send("Not enough args.");
+                }
+            }
+            else {
+                msg.channel.send("You do not have enough permissions to execute this command.");
+            }
+        }
+        if (msg.content.startsWith("*deny"))
+        {
+            if(Perms.effectivelyAllowed(msg.author, msg.guild)){
+                if(msg.mentions.users.array().length > 0){
+                    Perms.removeAllowed(msg.mentions.users.array()[0], msg.guild, sql);
+                    msg.channel.send(`Removed **${msg.mentions.users.array()[0].name}**'s permissions to pin messages.`);
+                }
+                else {
+                    msg.channel.send("Not enough args.");
+                }
+            }
+            else {
+                msg.channel.send("You do not have enough permissions to execute this command.");
+            }
+        }
+        if (msg.content === "*testperms")
+        {
+            msg.channel.send(`Do you have perms to pin messages? ${Perms.effectivelyAllowed(msg.author, msg.guild, sql)}`)
         }
     }
 });
