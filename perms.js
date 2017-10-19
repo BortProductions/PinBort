@@ -32,18 +32,18 @@ module.exports = {
     },
     addAllowed: function(user, server, sql){
         let current = [];
-        sql.get(`SELECT allowed FROM serverPerms WHERE serverId = "${server.id}"`).then(row => {
+        sql.get(`SELECT allowed FROM server WHERE serverId = "${server.id}"`).then(row => {
             if(row){
                 current = row.allowed.split(",");
             }
             current.push(user.id);
-            sql.get(`UPDATE serverPerms SET allowed = \'${current.join()}\' WHERE serverId = "${server.id}"`);
+            sql.get(`UPDATE server SET allowed = \'${current.join()}\' WHERE serverId = "${server.id}"`);
         }).catch((err) => {
             console.log(err);
-            sql.run("CREATE TABLE IF NOT EXISTS serverPerms (serverId TEXT, allowed TEXT)").then(() => {
-                sql.run(`SELECT allowed FROM serverPerms WHERE serverId = "${server.id}"`).then(row => {
+            sql.run("CREATE TABLE IF NOT EXISTS server (serverId TEXT, allowed TEXT, channel TEXT)").then(() => {
+                sql.run(`SELECT allowed FROM server WHERE serverId = "${server.id}"`).then(row => {
                     if(!row) {
-                        sql.run(`INSERT INTO serverPerms (serverId, allowed) VALUES (${server.id}, ${[user.id].join()})`);
+                        sql.run(`INSERT INTO server (serverId, allowed, channel) VALUES (${server.id}, ${[user.id].join()}, ?)`);
                     }
                 });
             });
@@ -51,46 +51,82 @@ module.exports = {
     },
     removeAllowed: function(user, server, sql){
         let current;
-        sql.get(`SELECT allowed FROM serverPerms WHERE serverId = "${server.id}"`).then(row => {
+        sql.get(`SELECT allowed FROM server WHERE serverId = "${server.id}"`).then(row => {
             current = row.allowed.split(",");
             if(current.includes(user.id)){
                 current.pop(user.id);
             }
-            sql.get(`UPDATE serverPerms SET allowed = \'${current.join()}\' WHERE serverId = "${server.id}"`);
+            sql.get(`UPDATE server SET allowed = \'${current.join()}\' WHERE serverId = "${server.id}"`);
         }).catch((err) => {
             console.log(err);
-            sql.run("CREATE TABLE IF NOT EXISTS serverPerms (serverId TEXT, allowed TEXT)").then(() => {
-                sql.run(`SELECT allowed FROM serverPerms WHERE serverId = "${server.id}"`).then(row => {
+            sql.run("CREATE TABLE IF NOT EXISTS server (serverId TEXT, allowed TEXT, channel TEXT)").then(() => {
+                sql.run(`SELECT allowed FROM server WHERE serverId = "${server.id}"`).then(row => {
                     if(!row){
-                        sql.run(`INSERT INTO serverPerms (serverId, allowed) VALUES (${server.id}, ?)`);
+                        sql.run(`INSERT INTO server (serverId, allowed, channel) VALUES (${server.id}, ?, ?)`);
                     }
                 });
             });
         });
     },
     rawAllowed: function(user, server, sql, callback) {
-        sql.get(`SELECT allowed FROM serverPerms WHERE serverId = "${server.id}"`).then(row => {
+        sql.get(`SELECT allowed FROM server WHERE serverId = "${server.id}"`).then(row => {
             if(row) {
                 let returnVal = false;
                 row.allowed.split(",").forEach(function (entry) {
-                    console.log(`Checking ${entry} vs ${user.id}`)
                     if (entry === user.id) {
                         returnVal = true;
-                        console.log("Success!")
                     }
                 });
                 callback(returnVal);
             }
         }).catch((err) => {
             console.log(err);
-            sql.run("CREATE TABLE IF NOT EXISTS serverPerms (serverId TEXT, allowed TEXT)").then(() => {
-                sql.run(`SELECT allowed FROM serverPerms WHERE serverId = "${server.id}"`).then(row => {
+            sql.run("CREATE TABLE IF NOT EXISTS server (serverId TEXT, allowed TEXT, channel TEXT)").then(() => {
+                sql.run(`SELECT allowed FROM server WHERE serverId = "${server.id}"`).then(row => {
                     if(!row) {
-                        sql.run(`INSERT INTO serverPerms (serverId, allowed) VALUES (${server.id}, ?)`);
+                        sql.run(`INSERT INTO server (serverId, allowed, channel) VALUES (${server.id}, ?, ?)`);
                     }
                 });
             });
             callback(false);
         });
+    },
+    setChannel: function (store, server, sql) {
+        sql.get(`SELECT channel FROM server WHERE serverId = "${server.id}"`).then(row => {
+            if(row){
+                sql.run(`UPDATE server SET channel = \'${store}\' WHERE serverId = "${server.id}"`);
+            }
+            else {
+                sql.run(`INSERT INTO server (serverId, allowed, channel) VALUES (${server.id}, ?, "${store}")`);
+            }
+        }).catch((err) => {
+            console.log(err);
+            sql.run("CREATE TABLE IF NOT EXISTS server (serverId TEXT, allowed TEXT, channel TEXT)").then(() => {
+                sql.run(`SELECT * FROM server WHERE serverId = "${server.id}"`).then(row => {
+                    if(!row) {
+                        sql.run(`INSERT INTO server (serverId, allowed, channel) VALUES (${server.id}, ?, "${store}")`);
+                    }
+                });
+            });
+        })
+    },
+    getChannel: function (server, sql, callback) {
+        sql.get(`SELECT channel FROM server WHERE serverId = "${server.id}"`).then(row => {
+            if(row){
+                callback(row.channel);
+                return;
+            }
+            callback("None")
+        }).catch((err) => {
+            console.log(err);
+            sql.run("CREATE TABLE IF NOT EXISTS server (serverId TEXT, allowed TEXT, channel TEXT)").then(() => {
+                sql.run(`SELECT * FROM server WHERE serverId = "${server.id}"`).then(row => {
+                    if(!row) {
+                        sql.run(`INSERT INTO server (serverId, allowed, channel) VALUES (${server.id}, ?, ?)`);
+                    }
+                });
+            });
+            callback("None");
+        })
     }
 };

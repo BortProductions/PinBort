@@ -3,6 +3,9 @@ const client = new Discord.Client();
 
 const fs = require("fs");
 
+const channelRegex = /([0-9]+)(?=>)/g;
+const numberRegex = /[0-9]+/g;
+
 const sql = require("sqlite");
 sql.open("./users.sqlite");
 
@@ -100,6 +103,37 @@ client.on('message', msg => {
             Perms.effectivelyAllowed(msg.author, msg.guild, sql, isAllowed => {
                 msg.channel.send(`Do you have perms to pin messages? ${isAllowed}`)
             });
+        }
+        if (msg.content.startsWith("*channel")){
+            Perms.effectivelyAllowed(msg.author, msg.guild, sql, isAllowed => {
+                if(isAllowed) {
+                    if (msg.content.split(" ").length > 1) {
+                        let data = [];
+                        if ((data = channelRegex.exec(msg.content.split(" ")[1])) !== null) {
+                            Perms.setChannel(data[0], msg.guild, sql);
+                            msg.channel.send("Successfully set channel to: " + msg.content.split(" ")[1]);
+                        }
+                        else {
+                            Perms.setChannel(msg.content.split(" ")[1], msg.guild, sql);
+                            msg.channel.send("Successfully set channel to: " + msg.content.split(" ")[1]);
+                        }
+                    }
+                    else {
+                        Perms.getChannel(msg.guild, sql, channel => {
+                            if(numberRegex.exec(channel) !== null){
+                                msg.channel.send("Pinning channel: <#" + channel + ">");
+                            }
+                            else {
+                                msg.channel.send("Pinning channel: " + channel);
+                            }
+                        });
+                    }
+                }
+                else{
+                    msg.channel.send("You do not have enough permissions to execute this command.");
+                }
+            })
+
         }
     }
 });
