@@ -63,37 +63,43 @@ client.on('message', msg => {
         }
         if (msg.content.startsWith("*allow"))
         {
-            if(Perms.effectivelyAllowed(msg.author, msg.guild, sql)){
-                if(msg.mentions.users.array().length > 0){
-                    Perms.addAllowed(msg.mentions.users.array()[0], msg.guild, sql);
-                    msg.channel.send(`Gave **${msg.mentions.users.array()[0].username}** permission to pin messages.`);
+            Perms.effectivelyAllowed(msg.author, msg.guild, sql, (isAllowed) => {
+                if(isAllowed){
+                    if(msg.mentions.users.array().length > 0){
+                        Perms.addAllowed(msg.mentions.users.array()[0], msg.guild, sql);
+                        msg.channel.send(`Gave **${msg.mentions.users.array()[0].username}** permission to pin messages.`);
+                    }
+                    else {
+                        msg.channel.send("Not enough args.");
+                    }
                 }
                 else {
-                    msg.channel.send("Not enough args.");
+                    msg.channel.send("You do not have enough permissions to execute this command.");
                 }
-            }
-            else {
-                msg.channel.send("You do not have enough permissions to execute this command.");
-            }
+            });
         }
         if (msg.content.startsWith("*deny"))
         {
-            if(Perms.effectivelyAllowed(msg.author, msg.guild)){
-                if(msg.mentions.users.array().length > 0){
-                    Perms.removeAllowed(msg.mentions.users.array()[0], msg.guild, sql);
-                    msg.channel.send(`Removed **${msg.mentions.users.array()[0].name}**'s permissions to pin messages.`);
+            Perms.effectivelyAllowed(msg.author, msg.guild, sql, (isAllowed) => {
+                if(isAllowed){
+                    if(msg.mentions.users.array().length > 0){
+                        Perms.removeAllowed(msg.mentions.users.array()[0], msg.guild, sql);
+                        msg.channel.send(`Removed **${msg.mentions.users.array()[0].name}**'s permissions to pin messages.`);
+                    }
+                    else {
+                        msg.channel.send("Not enough args.");
+                    }
                 }
                 else {
-                    msg.channel.send("Not enough args.");
+                    msg.channel.send("You do not have enough permissions to execute this command.");
                 }
-            }
-            else {
-                msg.channel.send("You do not have enough permissions to execute this command.");
-            }
+            });
         }
         if (msg.content === "*testperms")
         {
-            msg.channel.send(`Do you have perms to pin messages? ${Perms.effectivelyAllowed(msg.author, msg.guild, sql)}`)
+            Perms.effectivelyAllowed(msg.author, msg.guild, sql, isAllowed => {
+                msg.channel.send(`Do you have perms to pin messages? ${isAllowed}`)
+            });
         }
     }
 });
